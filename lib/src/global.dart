@@ -91,6 +91,19 @@ Future<dynamic> deleteOfflineRegion(int id, {String? accessToken}) =>
       },
     );
 
+Future<void> setRegionDownloadState({
+  required int regionID,
+  required bool isActive,
+}) {
+  return _globalChannel.invokeMethod(
+    'setRegionDownloadState',
+    <String, dynamic>{
+      'isActive': isActive,
+      'regionID': regionID,
+    },
+  );
+}
+
 Future<OfflineRegion> downloadOfflineRegion(
   OfflineRegionDefinition definition, {
   Map<String, dynamic> metadata = const {},

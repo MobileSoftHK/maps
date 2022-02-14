@@ -69,6 +69,11 @@ class GlobalMethodHandler implements MethodChannel.MethodCallHandler {
                 ConnectivityReceiver.instance(context).setConnected(offline ? false : null);
                 result.success(null);
                 break;
+            case "setRegionDownloadState":
+                boolean isActive = methodCall.argument("isActive");
+                String regionID = methodCall.argument("regionID").toString();
+                OfflineManagerUtils.setOfflineRegionDownloadState(regionID, isActive);
+                break;
             case "mergeOfflineRegions":
                 OfflineManagerUtils.mergeRegions(result, context, methodCall.argument("path"));
                 break;

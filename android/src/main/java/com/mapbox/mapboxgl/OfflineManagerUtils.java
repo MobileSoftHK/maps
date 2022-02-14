@@ -1,7 +1,7 @@
 package com.mapbox.mapboxgl;
 
-import android.content.Context;
 import android.util.Log;
+import android.content.Context;
 
 import com.google.gson.Gson;
 import com.mapbox.mapboxsdk.geometry.LatLng;
@@ -14,6 +14,7 @@ import com.mapbox.mapboxsdk.offline.OfflineRegionError;
 import com.mapbox.mapboxsdk.offline.OfflineRegionStatus;
 
 import java.util.Arrays;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,8 +23,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.flutter.plugin.common.MethodChannel;
 
+
+
 abstract class OfflineManagerUtils {
+
+    static Map<String, OfflineRegion> activeRegions= new HashMap<>();
+
     private static final String TAG = "OfflineManagerUtils";
+
+    static void setOfflineRegionDownloadState(String _regionID, boolean isActive){
+        activeRegions.get(_regionID).setDownloadState(isActive ? OfflineRegion.STATE_ACTIVE : OfflineRegion.STATE_INACTIVE);
+    }
 
     static void mergeRegions(MethodChannel.Result result, Context context, String path) {
         OfflineManager.getInstance(context).mergeOfflineRegions(path, new OfflineManager.MergeOfflineRegionsCallback() {
@@ -49,6 +59,40 @@ abstract class OfflineManagerUtils {
         result.success(null);
     }
 
+
+    // static Future<InetAddress> connectionThread = null;
+    // static private boolean hasInternetConnection() {
+    //     if(connectionThread != null) return true;
+    //     InetAddress inetAddress = null;
+    //     try {
+    //         connectionThread = Executors.newSingleThreadExecutor().submit(new Callable<InetAddress>() {
+    //             @Override
+    //             public InetAddress call() {
+    //                 try {
+    //                     return InetAddress.getByName("google.com");
+    //                 } catch (UnknownHostException e) {
+    //                     return null;
+    //                 }
+    //             }
+    //         });
+    //         inetAddress = connectionThread.get(2000, TimeUnit.MILLISECONDS);
+    //         connectionThread.cancel(true);
+    //         connectionThread = null;
+    //     } catch (InterruptedException e) {
+    //     } catch (ExecutionException e) {
+    //     } catch (TimeoutException e) {
+    //     } 
+    //     return inetAddress!=null && !inetAddress.equals("");
+    // }
+
+    // static private boolean hasInternetConnection(){
+    //     ConnectivityManager cm =
+    //     (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+    // NetworkInfo netInfo = cm.getActiveNetworkInfo();
+    // return netInfo != null && netInfo.isConnectedOrConnecting();
+    // }
+
+
     static void downloadRegion(
         MethodChannel.Result result,
         Context context,
@@ -71,7 +115,7 @@ abstract class OfflineManagerUtils {
             public void onCreate(OfflineRegion offlineRegion) {
                 Map<String, Object> regionData = offlineRegionToMap(offlineRegion);
                 result.success(new Gson().toJson(regionData));
-
+                activeRegions.put(String.valueOf(offlineRegion.getID()), offlineRegion);
                 _offlineRegion = offlineRegion;
                 //Start downloading region
                 _offlineRegion.setDownloadState(OfflineRegion.STATE_ACTIVE);
@@ -90,6 +134,7 @@ abstract class OfflineManagerUtils {
                             //This can be called multiple times, and result can be called only once, so there is need to prevent it
                             if (isComplete.get()) return;
                             isComplete.set(true);
+                            activeRegions.remove(String.valueOf(_offlineRegion.getID()));
                             channelHandler.onSuccess();
                         } else {
                             Log.i(TAG, "Region download progress = " + progress);
@@ -101,10 +146,12 @@ abstract class OfflineManagerUtils {
                     public void onError(OfflineRegionError error) {
                         Log.e(TAG, "onError reason: " + error.getReason());
                         Log.e(TAG, "onError message: " + error.getMessage());
-                        //Reset downloading state
-                        _offlineRegion.setDownloadState(OfflineRegion.STATE_INACTIVE);
-                        isComplete.set(true);
-                        channelHandler.onError("Downloading error", error.getMessage(), error.getReason());
+                        // if(error.getReason() == "REASON_CONNECTION"){
+                        //     _offlineRegion.setDownloadState(OfflineRegion.STATE_INACTIVE);
+                        //     isComplete.set(true);
+                        //     activeRegions.remove(String.valueOf(_offlineRegion.getID()));
+                        //     channelHandler.onError("Downloading error", error.getMessage(), error.getReason());
+                        // }
                     }
 
                     @Override
@@ -291,4 +338,6 @@ abstract class OfflineManagerUtils {
         }
         return new HashMap();
     }
+
+    
 }
