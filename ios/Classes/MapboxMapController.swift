@@ -283,6 +283,35 @@ class MapboxMapController: NSObject, FlutterPlatformView, MGLMapViewDelegate, Ma
             } else {
                 result(nil)
             }
+        case "symbols#update":
+            guard let symbolAnnotationController = symbolAnnotationController else { return }
+            guard let arguments = methodCall.arguments as? [String: Any] else { return }
+            guard let symbolIdsArray = arguments["symbols"] as? [String] else { return }
+            guard let optionsArray = arguments["options"] as? [[String: Any]] else { return }
+            let symbolDictionary = symbolIdsArray.enumerated().reduce([String: [String: Any]]()) { (dict, current) -> [String: [String: Any]] in
+                var dict = dict
+                dict[current.1] = optionsArray[current.0]
+                return dict
+            }
+            var symbols: [MGLStyleAnnotation] = [];
+            var cnt = 0
+            for (index, symbol) in symbolAnnotationController.styleAnnotations().enumerated(){
+                let symbolEntry = symbolDictionary[symbol.identifier]
+                if  symbolEntry != nil {
+                    cnt += 1
+                    Convert.interpretSymbolOptions(options: symbolEntry, delegate: symbol as! MGLSymbolStyleAnnotation)
+                    if let options = symbolEntry as? [String: Any] ,
+                        let iconImage = options["iconImage"] as? String {
+                        addIconImageToMap(iconImageName: iconImage)
+                    }
+                    symbols.append(symbol)
+                }
+                if cnt == symbolDictionary.count {
+                    break;
+                }
+            }
+            symbolAnnotationController.updateStyleAnnotations(symbols)
+            result(nil)
         case "symbol#update":
             guard let symbolAnnotationController = symbolAnnotationController else { return }
             guard let arguments = methodCall.arguments as? [String: Any] else { return }

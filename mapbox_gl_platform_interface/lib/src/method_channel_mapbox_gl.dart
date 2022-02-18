@@ -247,6 +247,17 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
   }
 
   @override
+  Future<void> updateSymbols(
+      List<Symbol> symbols, List<SymbolOptions> changes) async {
+    List changesArgument = changes.map((change) => change.toJson()).toList();
+    List symbolIds = symbols.map((symbol) => symbol.id).toList();
+    await _channel.invokeMethod('symbols#update', <String, dynamic>{
+      'symbols': symbolIds,
+      'options': changesArgument,
+    });
+  }
+
+  @override
   Future<void> updateSymbol(Symbol symbol, SymbolOptions changes) async {
     await _channel.invokeMethod('symbol#update', <String, dynamic>{
       'symbol': symbol.id,
@@ -797,7 +808,7 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
           .map((key, value) => MapEntry<String, String>(key, jsonEncode(value)))
     });
   }
-  
+
   @override
   void dispose() {
     super.dispose();

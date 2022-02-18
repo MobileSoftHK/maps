@@ -167,6 +167,15 @@ class MapboxMapController extends MapboxGlPlatform
   }
 
   @override
+  Future<void> updateSymbols(List<Symbol> symbols, List<SymbolOptions> changes) async {
+   Map updateMap = {}
+    for (int i = 0; i < symbols.length; i++){
+      updateMap[symbols[i].id] = changes[i];
+    } 
+    symbolManager.updateAll(updateMap);
+  }
+
+  @override
   Future<LatLng> getSymbolLatLng(Symbol symbol) async {
     var coordinates = symbolManager.getFeature(symbol.id)!.geometry.coordinates;
     return LatLng(coordinates[1], coordinates[0]);
