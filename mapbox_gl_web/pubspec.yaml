@@ -16,7 +16,11 @@ dependencies:
   flutter_web_plugins:
     sdk: flutter
   meta: ^1.1.7
-  mapbox_gl_platform_interface: 0.14.0
+  mapbox_gl_platform_interface:
+    git:
+      url: https://github.com/MobileSoftHK/maps.git
+      path: mapbox_gl_platform_interface
+      ref: dogtrace/release-0.14.0
   mapbox_gl_dart: ^0.2.0-nullsafety
   image: ^3.0.0
 
