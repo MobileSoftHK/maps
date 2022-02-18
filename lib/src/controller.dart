@@ -472,15 +472,12 @@ class MapboxMapController extends ChangeNotifier {
 
   Future<void> updateSymbols(
       List<Symbol> symbolList, List<SymbolOptions> changesList) async {
-    List<Future> futures = [];
+    await _mapboxGlPlatform.updateSymbols(symbolList, changesList);
     for (int i = 0; i < symbolList.length; i++) {
       final symbol = symbolList[i];
       final change = changesList[i];
-      assert(_symbols[symbol.id] == symbol);
-      futures.add(_mapboxGlPlatform.updateSymbol(symbol, change));
       symbol.options = symbol.options.copyWith(change);
     }
-    await Future.wait(futures);
     notifyListeners();
   }
 
