@@ -102,6 +102,29 @@ abstract class MapboxGlPlatform {
     throw UnimplementedError('getTelemetryEnabled() has not been implemented.');
   }
 
+  Future<List<Symbol>> addSymbolsMapAligned(List<SymbolOptions> options,
+      [List<Map>? data]) async {
+    throw UnimplementedError(
+        'addSymbolsMapAligned() has not been implemented.');
+  }
+
+  Future<void> updateSymbolMapAligned(
+      Symbol symbol, SymbolOptions changes) async {
+    throw UnimplementedError(
+        'updateSymbolMapAligned() has not been implemented.');
+  }
+
+  Future<void> updateSymbolsMapAligned(
+      List<Symbol> symbols, List<SymbolOptions> changes) async {
+    throw UnimplementedError(
+        'updateSymbolsMapAligned() has not been implemented.');
+  }
+
+  Future<void> removeSymbolsMapAligned(Iterable<String> symbolsIds) async {
+    throw UnimplementedError(
+        'removeSymbolsMapAligned() has not been implemented.');
+  }
+
   Future<List<Symbol>> addSymbols(List<SymbolOptions> options,
       [List<Map>? data]) async {
     throw UnimplementedError('addSymbols() has not been implemented.');
@@ -152,6 +175,11 @@ abstract class MapboxGlPlatform {
 
   Future<void> updateCircle(Circle circle, CircleOptions changes) async {
     throw UnimplementedError('updateCircle() has not been implemented.');
+  }
+
+  Future<void> updateCircles(
+      List<Circle> symbols, List<CircleOptions> changes) async {
+    throw UnimplementedError('updateCircles() has not been implemented.');
   }
 
   Future<LatLng> getCircleLatLng(Circle circle) async {

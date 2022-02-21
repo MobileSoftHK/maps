@@ -20,6 +20,7 @@ class MapboxMapController: NSObject, FlutterPlatformView, MGLMapViewDelegate, Ma
     private var myLocationEnabled = false
 
     private var symbolAnnotationController: MGLSymbolAnnotationController?
+    private var symbolAnnotationControllerNoRotation: MGLSymbolAnnotationController?
     private var circleAnnotationController: MGLCircleAnnotationController?
     private var lineAnnotationController: MGLLineAnnotationController?
     private var fillAnnotationController: MGLPolygonAnnotationController?
@@ -88,6 +89,15 @@ class MapboxMapController: NSObject, FlutterPlatformView, MGLMapViewDelegate, Ma
         let idSet = Set(ids)
         let annotations = controller.styleAnnotations()
         controller.removeStyleAnnotations(annotations.filter { idSet.contains($0.identifier) })
+    }
+    
+    func resolveSymbolAnnotationController(methodCall: FlutterMethodCall) -> MGLSymbolAnnotationController? {
+        guard let arguments = methodCall.arguments as? [String: Any] else { return nil}
+        let map_lock = arguments["map_aligned_layer"] as? Bool;
+        if(map_lock == true){
+            return symbolAnnotationControllerNoRotation;
+        }
+        return symbolAnnotationController;
     }
     
     func onMethodCall(methodCall: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -264,7 +274,7 @@ class MapboxMapController: NSObject, FlutterPlatformView, MGLMapViewDelegate, Ma
             }
             result(nil)
         case "symbols#addAll":
-            guard let symbolAnnotationController = symbolAnnotationController else { return }
+            guard let symbolAnnotationController = resolveSymbolAnnotationController(methodCall: methodCall) else { return }
             guard let arguments = methodCall.arguments as? [String: Any] else { return }
 
             if let options = arguments["options"] as? [[String: Any]] {
@@ -284,7 +294,7 @@ class MapboxMapController: NSObject, FlutterPlatformView, MGLMapViewDelegate, Ma
                 result(nil)
             }
         case "symbols#update":
-            guard let symbolAnnotationController = symbolAnnotationController else { return }
+            guard let symbolAnnotationController = resolveSymbolAnnotationController(methodCall: methodCall) else { return }
             guard let arguments = methodCall.arguments as? [String: Any] else { return }
             guard let symbolIdsArray = arguments["symbols"] as? [String] else { return }
             guard let optionsArray = arguments["options"] as? [[String: Any]] else { return }
@@ -294,26 +304,24 @@ class MapboxMapController: NSObject, FlutterPlatformView, MGLMapViewDelegate, Ma
                 return dict
             }
             var symbols: [MGLStyleAnnotation] = [];
-            var cnt = 0
             for (index, symbol) in symbolAnnotationController.styleAnnotations().enumerated(){
                 let symbolEntry = symbolDictionary[symbol.identifier]
                 if  symbolEntry != nil {
-                    cnt += 1
                     Convert.interpretSymbolOptions(options: symbolEntry, delegate: symbol as! MGLSymbolStyleAnnotation)
                     if let options = symbolEntry as? [String: Any] ,
                         let iconImage = options["iconImage"] as? String {
                         addIconImageToMap(iconImageName: iconImage)
                     }
                     symbols.append(symbol)
-                }
-                if cnt == symbolDictionary.count {
-                    break;
+                   if symbols.count == symbolDictionary.count {
+                        break;
+                    }
                 }
             }
             symbolAnnotationController.updateStyleAnnotations(symbols)
             result(nil)
         case "symbol#update":
-            guard let symbolAnnotationController = symbolAnnotationController else { return }
+            guard let symbolAnnotationController = resolveSymbolAnnotationController(methodCall: methodCall) else { return }
             guard let arguments = methodCall.arguments as? [String: Any] else { return }
             guard let symbolId = arguments["symbol"] as? String else { return }
 
@@ -331,7 +339,7 @@ class MapboxMapController: NSObject, FlutterPlatformView, MGLMapViewDelegate, Ma
             }
             result(nil)
         case "symbols#removeAll":
-            guard let symbolAnnotationController = symbolAnnotationController else { return }
+            guard let symbolAnnotationController = resolveSymbolAnnotationController(methodCall: methodCall) else { return }
             guard let arguments = methodCall.arguments as? [String: Any] else { return }
             guard let symbolIds = arguments["ids"] as? [String] else { return }
 
@@ -339,7 +347,7 @@ class MapboxMapController: NSObject, FlutterPlatformView, MGLMapViewDelegate, Ma
             result(nil)
 
         case "symbol#getGeometry":
-            guard let symbolAnnotationController = symbolAnnotationController else { return }
+            guard let symbolAnnotationController = resolveSymbolAnnotationController(methodCall: methodCall) else { return }
             guard let arguments = methodCall.arguments as? [String: Any] else { return }
             guard let symbolId = arguments["symbol"] as? String else { return }
 
@@ -355,21 +363,21 @@ class MapboxMapController: NSObject, FlutterPlatformView, MGLMapViewDelegate, Ma
             }
             result(reply)
         case "symbolManager#iconAllowOverlap":
-            guard let symbolAnnotationController = symbolAnnotationController else { return }
+            guard let symbolAnnotationController = resolveSymbolAnnotationController(methodCall: methodCall) else { return }
             guard let arguments = methodCall.arguments as? [String: Any] else { return }
             guard let iconAllowOverlap = arguments["iconAllowOverlap"] as? Bool else { return }
 
             symbolAnnotationController.iconAllowsOverlap = iconAllowOverlap
             result(nil)
         case "symbolManager#iconIgnorePlacement":
-            guard let symbolAnnotationController = symbolAnnotationController else { return }
+            guard let symbolAnnotationController = resolveSymbolAnnotationController(methodCall: methodCall) else { return }
             guard let arguments = methodCall.arguments as? [String: Any] else { return }
             guard let iconIgnorePlacement = arguments["iconIgnorePlacement"] as? Bool else { return }
 
             symbolAnnotationController.iconIgnoresPlacement = iconIgnorePlacement
             result(nil)
         case "symbolManager#textAllowOverlap":
-            guard let symbolAnnotationController = symbolAnnotationController else { return }
+            guard let symbolAnnotationController = resolveSymbolAnnotationController(methodCall: methodCall) else { return }
             guard let arguments = methodCall.arguments as? [String: Any] else { return }
             guard let textAllowOverlap = arguments["textAllowOverlap"] as? Bool else { return }
 
@@ -420,7 +428,30 @@ class MapboxMapController: NSObject, FlutterPlatformView, MGLMapViewDelegate, Ma
             else {
                 result(nil)
             }
-  
+    
+        case "circles#update":
+            guard let circleAnnotationController = circleAnnotationController else { return }
+            guard let arguments = methodCall.arguments as? [String: Any] else { return }
+            guard let circleIdsArray = arguments["circles"] as? [String] else { return }
+            guard let optionsArray = arguments["options"] as? [[String: Any]] else { return }
+            let circleDictionary = circleIdsArray.enumerated().reduce([String: [String: Any]]()) { (dict, current) -> [String: [String: Any]] in
+                var dict = dict
+                dict[current.1] = optionsArray[current.0]
+                return dict
+            }
+            var circles: [MGLStyleAnnotation] = [];
+            for (index, circle) in circleAnnotationController.styleAnnotations().enumerated() {
+                let circleEntry = circleDictionary[circle.identifier]
+                if circleEntry != nil {
+                    Convert.interpretCircleOptions(options: circleEntry, delegate: circle as! MGLCircleStyleAnnotation)
+                    circles.append(circle);
+                    if circles.count == circleDictionary.count {
+                        break;
+                    }
+                }
+            }
+            circleAnnotationController.updateStyleAnnotations(circles);
+            result(nil)
         case "circle#update":
             guard let circleAnnotationController = circleAnnotationController else { return }
             guard let arguments = methodCall.arguments as? [String: Any] else { return }
@@ -623,7 +654,6 @@ class MapboxMapController: NSObject, FlutterPlatformView, MGLMapViewDelegate, Ma
             var identifier: String? = nil
             if let allOptions = arguments["options"] as? [[String: Any]]{
                 var fills: [MGLPolygonStyleAnnotation] = [];
-
                 for options in allOptions{
                     if let geometry = options["geometry"] as? [[[Double]]] {
                         guard geometry.count > 0 else { break }
@@ -968,6 +998,13 @@ class MapboxMapController: NSObject, FlutterPlatformView, MGLMapViewDelegate, Ma
                 circleAnnotationController!.annotationsInteractionEnabled = annotationConsumeTapEvents.contains("AnnotationType.circle")
                 circleAnnotationController?.delegate = self
             case "AnnotationType.symbol":
+                symbolAnnotationControllerNoRotation = MGLSymbolAnnotationController(mapView: self.mapView);
+                symbolAnnotationControllerNoRotation!.annotationsInteractionEnabled = annotationConsumeTapEvents.contains("AnnotationType.symbol")
+                symbolAnnotationControllerNoRotation!.iconRotationAlignment = MGLIconRotationAlignment.map
+                symbolAnnotationControllerNoRotation!.iconAllowsOverlap = true
+                symbolAnnotationControllerNoRotation!.iconIgnoresPlacement = true
+                symbolAnnotationControllerNoRotation!.textAllowsOverlap = true
+                symbolAnnotationControllerNoRotation?.delegate = self
                 symbolAnnotationController = MGLSymbolAnnotationController(mapView: self.mapView)
                 symbolAnnotationController!.annotationsInteractionEnabled = annotationConsumeTapEvents.contains("AnnotationType.symbol")
                 symbolAnnotationController?.delegate = self

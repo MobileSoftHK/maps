@@ -194,6 +194,13 @@ class MapboxMapController extends ChangeNotifier {
   Set<Symbol> get symbols => Set<Symbol>.from(_symbols.values);
   final Map<String, Symbol> _symbols = <String, Symbol>{};
 
+  /// The current set of map aligned symbols on this map.
+  ///
+  /// The returned set will be a detached snapshot of the symbols collection.
+  Set<Symbol> get symbolsMapAligned =>
+      Set<Symbol>.from(_symbolsMapAligned.values);
+  final Map<String, Symbol> _symbolsMapAligned = <String, Symbol>{};
+
   /// Callbacks to receive tap events for lines placed on this map.
   final ArgumentCallbacks<Line> onLineTapped = ArgumentCallbacks<Line>();
 
@@ -476,6 +483,7 @@ class MapboxMapController extends ChangeNotifier {
     for (int i = 0; i < symbolList.length; i++) {
       final symbol = symbolList[i];
       final change = changesList[i];
+      assert(_symbols[symbol.id] == symbol);
       symbol.options = symbol.options.copyWith(change);
     }
     notifyListeners();
@@ -683,6 +691,18 @@ class MapboxMapController extends ChangeNotifier {
     assert(_circles[circle.id] == circle);
     await _mapboxGlPlatform.updateCircle(circle, changes);
     circle.options = circle.options.copyWith(changes);
+    notifyListeners();
+  }
+
+  Future<void> updateCircles(
+      List<Circle> circleList, List<CircleOptions> changesList) async {
+    await _mapboxGlPlatform.updateCircles(circleList, changesList);
+    for (int i = 0; i < circleList.length; i++) {
+      final circle = circleList[i];
+      final change = changesList[i];
+      assert(_circles[circle.id] == circle);
+      circle.options = circle.options.copyWith(change);
+    }
     notifyListeners();
   }
 
@@ -992,5 +1012,58 @@ class MapboxMapController extends ChangeNotifier {
   void dispose() {
     super.dispose();
     _mapboxGlPlatform.dispose();
+  }
+
+  // CUSTOM IMPLEMENTATION OF SOME NEEDED FUNCTIONS
+
+  Future<Symbol> addSymbolMapAligned(SymbolOptions options, [Map? data]) async {
+    List<Symbol> result =
+        await addSymbolsMapAligned([options], data != null ? [data] : []);
+    return result.first;
+  }
+
+  Future<List<Symbol>> addSymbolsMapAligned(List<SymbolOptions> options,
+      [List<Map>? data]) async {
+    final List<SymbolOptions> effectiveOptions =
+        options.map((o) => SymbolOptions.defaultOptions.copyWith(o)).toList();
+    final symbols =
+        await _mapboxGlPlatform.addSymbolsMapAligned(effectiveOptions, data);
+    symbols.forEach((s) => _symbolsMapAligned[s.id] = s);
+    notifyListeners();
+    return symbols;
+  }
+
+  Future<void> updateSymbolMapAligned(
+      Symbol symbol, SymbolOptions changes) async {
+    assert(_symbolsMapAligned[symbol.id] == symbol);
+    await _mapboxGlPlatform.updateSymbolMapAligned(symbol, changes);
+    symbol.options = symbol.options.copyWith(changes);
+    notifyListeners();
+  }
+
+  Future<void> updateSymbolsMapAligned(
+      List<Symbol> symbolList, List<SymbolOptions> changesList) async {
+    await _mapboxGlPlatform.updateSymbolsMapAligned(symbolList, changesList);
+    for (int i = 0; i < symbolList.length; i++) {
+      final symbol = symbolList[i];
+      final change = changesList[i];
+      assert(_symbolsMapAligned[symbol.id] == symbol);
+      symbol.options = symbol.options.copyWith(change);
+    }
+    notifyListeners();
+  }
+
+  Future<void> removeSymbolMapAligned(Symbol symbol) async {
+    assert(_symbolsMapAligned[symbol.id] == symbol);
+    await _removeSymbols([symbol.id]);
+    notifyListeners();
+  }
+
+  Future<void> removeSymbolsMapAligned(Iterable<Symbol> symbols) async {
+    final ids =
+        symbols.where((s) => _symbolsMapAligned[s.id] == s).map((s) => s.id);
+    assert(_symbolsMapAligned.length == ids.length);
+    await _removeSymbols(ids);
+    notifyListeners();
   }
 }

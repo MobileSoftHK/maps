@@ -225,6 +225,49 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
     return await _channel.invokeMethod('map#getTelemetryEnabled');
   }
 
+  ///CUSTOM MAP ALIGNED SYMBOL FUNCTIONS
+  @override
+  Future<List<Symbol>> addSymbolsMapAligned(List<SymbolOptions> options,
+      [List<Map>? data]) async {
+    final List<dynamic> symbolIds = await _channel.invokeMethod(
+      'symbols#addAll',
+      <String, dynamic>{
+        'options': options.map((o) => o.toJson()).toList(),
+        'map_aligned_layer': true,
+      },
+    );
+    final List<Symbol> symbols = symbolIds
+        .asMap()
+        .map((i, id) => MapEntry(
+            i,
+            Symbol(id, options.elementAt(i),
+                data != null && data.length > i ? data.elementAt(i) : null)))
+        .values
+        .toList();
+    return symbols;
+  }
+
+  @override
+  Future<void> updateSymbolsMapAligned(
+      List<Symbol> symbols, List<SymbolOptions> changes) async {
+    await updateSymbols(symbols, changes,
+        additionalArguments: {"map_aligned_layer": true});
+  }
+
+  @override
+  Future<void> updateSymbolMapAligned(
+      Symbol symbol, SymbolOptions changes) async {
+    await updateSymbol(symbol, changes,
+        additionalArguments: {"map_aligned_layer": true});
+  }
+
+  @override
+  Future<void> removeSymbolsMapAligned(Iterable<String> ids) async {
+    await removeSymbols(ids, additionalArguments: {"map_aligned_layer": true});
+  }
+
+  ///END CUSTOM MAP ALIGNED SYMBOL FUNCTIONS
+
   @override
   Future<List<Symbol>> addSymbols(List<SymbolOptions> options,
       [List<Map>? data]) async {
@@ -247,21 +290,24 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
   }
 
   @override
-  Future<void> updateSymbols(
-      List<Symbol> symbols, List<SymbolOptions> changes) async {
+  Future<void> updateSymbols(List<Symbol> symbols, List<SymbolOptions> changes,
+      {Map additionalArguments = const {}}) async {
     List changesArgument = changes.map((change) => change.toJson()).toList();
     List symbolIds = symbols.map((symbol) => symbol.id).toList();
     await _channel.invokeMethod('symbols#update', <String, dynamic>{
       'symbols': symbolIds,
       'options': changesArgument,
+      ...additionalArguments,
     });
   }
 
   @override
-  Future<void> updateSymbol(Symbol symbol, SymbolOptions changes) async {
+  Future<void> updateSymbol(Symbol symbol, SymbolOptions changes,
+      {Map additionalArguments = const {}}) async {
     await _channel.invokeMethod('symbol#update', <String, dynamic>{
       'symbol': symbol.id,
       'options': changes.toJson(),
+      ...additionalArguments,
     });
   }
 
@@ -277,9 +323,11 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
   }
 
   @override
-  Future<void> removeSymbols(Iterable<String> ids) async {
+  Future<void> removeSymbols(Iterable<String> ids,
+      {Map additionalArguments = const {}}) async {
     await _channel.invokeMethod('symbols#removeAll', <String, dynamic>{
       'ids': ids.toList(),
+      ...additionalArguments,
     });
   }
 
@@ -385,6 +433,17 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
     await _channel.invokeMethod('circle#update', <String, dynamic>{
       'circle': circle.id,
       'options': changes.toJson(),
+    });
+  }
+
+  @override
+  Future<void> updateCircles(
+      List<Circle> symbols, List<CircleOptions> changes) async {
+    List changesArgument = changes.map((change) => change.toJson()).toList();
+    List circleIds = symbols.map((symbol) => symbol.id).toList();
+    await _channel.invokeMethod('circles#update', <String, dynamic>{
+      'circles': circleIds,
+      'options': changesArgument,
     });
   }
 
