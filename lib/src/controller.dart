@@ -477,7 +477,33 @@ class MapboxMapController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateSymbols(
+  Future<void> updateAnnotations({
+    List<Symbol> symbols = const [],
+    List<SymbolOptions> symbolChanges = const [],
+    List<Symbol> symbolsMapAligned = const [],
+    List<SymbolOptions> symbolMapAlignedChanges = const [],
+    List<Circle> circles = const [],
+    List<CircleOptions> circleChanges = const [],
+  }) async {
+    final List<Future> futures = [];
+    assert(symbols.length == symbolChanges.length);
+    if (symbols.isNotEmpty) {
+      futures.add(_updateSymbolsCore(symbols, symbolChanges));
+    }
+    assert(symbolsMapAligned.length == symbolMapAlignedChanges.length);
+    if (symbolsMapAligned.isNotEmpty) {
+      futures.add(_updateSymbolsMapAlignedCore(
+          symbolsMapAligned, symbolMapAlignedChanges));
+    }
+    assert(circles.length == circleChanges.length);
+    if (circles.isNotEmpty) {
+      futures.add(_updateCirclesCore(circles, circleChanges));
+    }
+    await Future.wait(futures);
+    notifyListeners();
+  }
+
+  Future<void> _updateSymbolsCore(
       List<Symbol> symbolList, List<SymbolOptions> changesList) async {
     await _mapboxGlPlatform.updateSymbols(symbolList, changesList);
     for (int i = 0; i < symbolList.length; i++) {
@@ -486,6 +512,11 @@ class MapboxMapController extends ChangeNotifier {
       assert(_symbols[symbol.id] == symbol);
       symbol.options = symbol.options.copyWith(change);
     }
+  }
+
+  Future<void> updateSymbols(
+      List<Symbol> symbolList, List<SymbolOptions> changesList) async {
+    await _updateSymbolsCore(symbolList, changesList);
     notifyListeners();
   }
 
@@ -694,7 +725,7 @@ class MapboxMapController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateCircles(
+  Future<void> _updateCirclesCore(
       List<Circle> circleList, List<CircleOptions> changesList) async {
     await _mapboxGlPlatform.updateCircles(circleList, changesList);
     for (int i = 0; i < circleList.length; i++) {
@@ -703,6 +734,11 @@ class MapboxMapController extends ChangeNotifier {
       assert(_circles[circle.id] == circle);
       circle.options = circle.options.copyWith(change);
     }
+  }
+
+  Future<void> updateCircles(
+      List<Circle> circleList, List<CircleOptions> changesList) async {
+    _updateCirclesCore(circleList, changesList);
     notifyListeners();
   }
 
@@ -1041,7 +1077,7 @@ class MapboxMapController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateSymbolsMapAligned(
+  Future<void> _updateSymbolsMapAlignedCore(
       List<Symbol> symbolList, List<SymbolOptions> changesList) async {
     await _mapboxGlPlatform.updateSymbolsMapAligned(symbolList, changesList);
     for (int i = 0; i < symbolList.length; i++) {
@@ -1050,6 +1086,11 @@ class MapboxMapController extends ChangeNotifier {
       assert(_symbolsMapAligned[symbol.id] == symbol);
       symbol.options = symbol.options.copyWith(change);
     }
+  }
+
+  Future<void> updateSymbolsMapAligned(
+      List<Symbol> symbolList, List<SymbolOptions> changesList) async {
+    await _updateSymbolsMapAlignedCore(symbolList, changesList);
     notifyListeners();
   }
 
