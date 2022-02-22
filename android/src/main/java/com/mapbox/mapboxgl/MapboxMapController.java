@@ -33,6 +33,7 @@ import com.mapbox.android.core.location.LocationEngine;
 import com.mapbox.android.core.location.LocationEngineCallback;
 import com.mapbox.android.core.location.LocationEngineProvider;
 import com.mapbox.android.core.location.LocationEngineResult;
+
 import com.mapbox.android.telemetry.TelemetryEnabler;
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.FeatureCollection;
@@ -80,7 +81,9 @@ import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.layers.Property;
 import com.mapbox.mapboxsdk.style.layers.PropertyFactory;
 import com.mapbox.mapboxsdk.style.layers.PropertyValue;
+import static com.mapbox.mapboxsdk.style.layers.Property.*;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
+
 
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -136,6 +139,7 @@ final class MapboxMapController
   private final Map<String, CircleController> circles;
   private final Map<String, FillController> fills;
   private SymbolManager symbolManager;
+  private SymbolManager symbolManagerMapAligned;
   private LineManager lineManager;
   private CircleManager circleManager;
   private FillManager fillManager;
@@ -340,6 +344,7 @@ final class MapboxMapController
             break;
           case "AnnotationType.symbol":
             belowLayer = enableSymbolManager(style, belowLayer);
+            belowLayer = enableSymbolManagerMapAligned(style, belowLayer);
             break;
           default:
             throw new IllegalArgumentException("Unknown annotation type: " + annotationType + ", must be either 'fill', 'line', 'circle' or 'symbol'");
@@ -487,6 +492,19 @@ final class MapboxMapController
     }
   }
 
+  private String enableSymbolManagerMapAligned(@NonNull Style style, @Nullable String belowLayer){
+    if (symbolManagerMapAligned == null) {
+      symbolManagerMapAligned = new SymbolManager(mapView, mapboxMap, style, belowLayer);
+      symbolManagerMapAligned.setIconAllowOverlap(true);
+      symbolManagerMapAligned.setIconIgnorePlacement(true);
+      symbolManagerMapAligned.setTextAllowOverlap(true);
+      symbolManagerMapAligned.setTextIgnorePlacement(true);
+      symbolManagerMapAligned.setIconRotationAlignment(ICON_ROTATION_ALIGNMENT_MAP);
+      symbolManagerMapAligned.addClickListener(MapboxMapController.this::onAnnotationClick);
+    }
+    return symbolManagerMapAligned.getLayerId();
+  }
+
   private String enableSymbolManager(@NonNull Style style, @Nullable String belowLayer) {
     if (symbolManager == null) {
       symbolManager = new SymbolManager(mapView, mapboxMap, style, belowLayer);
@@ -521,6 +539,14 @@ final class MapboxMapController
       fillManager.addClickListener(MapboxMapController.this::onAnnotationClick);
     }
     return fillManager.getLayerId();
+  }
+
+  private SymbolManager resolveSymbolAnnotationManager(@NonNull MethodCall methodCall)  {
+    final Boolean mapLock = methodCall.argument("map_aligned_layer");
+    if(Boolean.TRUE.equals(mapLock)){
+        return symbolManagerMapAligned;
+    }
+    return symbolManager;
   }
 
   @Override
@@ -734,7 +760,7 @@ final class MapboxMapController
             symbolOptionsList.add(symbolBuilder.getSymbolOptions());
           }
           if (!symbolOptionsList.isEmpty()) {
-            List<Symbol> newSymbols = symbolManager.create(symbolOptionsList);
+            List<Symbol> newSymbols = resolveSymbolAnnotationManager(call).create(symbolOptionsList);
             String symbolId;
             for (Symbol symbol : newSymbols) {
               symbolId = String.valueOf(symbol.getId());
@@ -758,7 +784,7 @@ final class MapboxMapController
             }
         }
         if(!symbolList.isEmpty()) {
-          symbolManager.delete(symbolList);
+          resolveSymbolAnnotationManager(call).delete(symbolList);
         }
         result.success(null);
         break;
@@ -767,7 +793,23 @@ final class MapboxMapController
         final String symbolId = call.argument("symbol");
         final SymbolController symbol = symbol(symbolId);
         Convert.interpretSymbolOptions(call.argument("options"), symbol);
-        symbol.update(symbolManager);
+        symbol.update(resolveSymbolAnnotationManager(call));
+        result.success(null);
+        break;
+      }
+      case "symbols#update": {
+        final List<String> symbolIds = call.argument("symbols");
+        final List<Map<String,Object>> options = call.argument("options");
+        SymbolManager symbolManager = resolveSymbolAnnotationManager(call);
+        List<Symbol> symbolsToUpdate = new ArrayList<Symbol>();
+        int i = 0;
+        for (String symbolId : symbolIds) {
+          final SymbolController symbol = symbol(symbolId);
+          Convert.interpretSymbolOptions(options.get(i), symbol);
+          symbolsToUpdate.add(symbol.getSymbol());
+          i++;
+        }
+        symbolManager.update(symbolsToUpdate);
         result.success(null);
         break;
       }
@@ -782,25 +824,25 @@ final class MapboxMapController
       }
       case "symbolManager#iconAllowOverlap": {
         final Boolean value = call.argument("iconAllowOverlap");
-        symbolManager.setIconAllowOverlap(value);
+        resolveSymbolAnnotationManager(call).setIconAllowOverlap(value);
         result.success(null);
         break;
       }
       case "symbolManager#iconIgnorePlacement": {
         final Boolean value = call.argument("iconIgnorePlacement");
-        symbolManager.setIconIgnorePlacement(value);
+        resolveSymbolAnnotationManager(call).setIconIgnorePlacement(value);
         result.success(null);
         break;
       }
       case "symbolManager#textAllowOverlap": {
         final Boolean value = call.argument("textAllowOverlap");
-        symbolManager.setTextAllowOverlap(value);
+        resolveSymbolAnnotationManager(call).setTextAllowOverlap(value);
         result.success(null);
         break;
       }
       case "symbolManager#textIgnorePlacement": {
         final Boolean iconAllowOverlap = call.argument("textIgnorePlacement");
-        symbolManager.setTextIgnorePlacement(iconAllowOverlap);
+        resolveSymbolAnnotationManager(call).setTextIgnorePlacement(iconAllowOverlap);
         result.success(null);
         break;
       }
@@ -944,6 +986,20 @@ final class MapboxMapController
         final CircleController circle = circle(circleId);
         Convert.interpretCircleOptions(call.argument("options"), circle);
         circle.update(circleManager);
+        result.success(null);
+        break;
+      }
+      case "circles#update":{
+        final List<String> circleIds = call.argument("circles");
+        final List<Map<String,Object>> options = call.argument("options");
+        List<Circle> circlesToUpdate = new ArrayList<Circle>();
+        int i = 0;
+        for(String circleId : circleIds){
+          final CircleController circle = circle(circleId);
+          Convert.interpretCircleOptions(options.get(i), circle);
+          circlesToUpdate.add(circle.getCircle());
+        }
+        circleManager.update(circlesToUpdate);
         result.success(null);
         break;
       }
@@ -1328,6 +1384,9 @@ final class MapboxMapController
     }
     if (symbolManager != null) {
       symbolManager.onDestroy();
+    }
+    if(symbolManagerMapAligned != null){
+      symbolManagerMapAligned.onDestroy();
     }
     if (lineManager != null) {
       lineManager.onDestroy();
