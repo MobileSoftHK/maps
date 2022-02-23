@@ -566,7 +566,9 @@ class MapboxMapController extends ChangeNotifier {
   /// The returned [Future] completes once listeners have been notified.
   Future<void> clearSymbols() async {
     await _mapboxGlPlatform.removeSymbols(_symbols.keys);
+    await _mapboxGlPlatform.removeSymbolsMapAligned(_symbolsMapAligned.keys);
     _symbols.clear();
+    _symbolsMapAligned.clear();
     notifyListeners();
   }
 
@@ -578,6 +580,16 @@ class MapboxMapController extends ChangeNotifier {
   Future<void> _removeSymbols(Iterable<String> ids) async {
     await _mapboxGlPlatform.removeSymbols(ids);
     _symbols.removeWhere((k, s) => ids.contains(k));
+  }
+
+  /// Helper method to remove a single symbol from the map. Consumed by
+  /// [removeSymbolMapAligned] and [clearSymbols].
+  ///
+  /// The returned [Future] completes once the symbol has been removed from
+  /// [_symbols].
+  Future<void> _removeSymbolsMapAligned(Iterable<String> ids) async {
+    await _mapboxGlPlatform.removeSymbolsMapAligned(ids);
+    _symbolsMapAligned.removeWhere((k, s) => ids.contains(k));
   }
 
   /// Adds a line to the map, configured using the specified custom [options].
@@ -1096,7 +1108,7 @@ class MapboxMapController extends ChangeNotifier {
 
   Future<void> removeSymbolMapAligned(Symbol symbol) async {
     assert(_symbolsMapAligned[symbol.id] == symbol);
-    await _removeSymbols([symbol.id]);
+    await _removeSymbolsMapAligned([symbol.id]);
     notifyListeners();
   }
 
@@ -1104,7 +1116,7 @@ class MapboxMapController extends ChangeNotifier {
     final ids =
         symbols.where((s) => _symbolsMapAligned[s.id] == s).map((s) => s.id);
     assert(_symbolsMapAligned.length == ids.length);
-    await _removeSymbols(ids);
+    await _removeSymbolsMapAligned(ids);
     notifyListeners();
   }
 }
