@@ -59,7 +59,8 @@ class MapboxMapController extends ChangeNotifier {
     });
 
     _mapboxGlPlatform.onSymbolTappedPlatform.add((symbolId) {
-      final symbol = _symbols[symbolId];
+      Symbol? symbol = _symbols[symbolId];
+      symbol ??= _symbolsMapAligned[symbolId];
       if (symbol != null) {
         onSymbolTapped(symbol);
       }
