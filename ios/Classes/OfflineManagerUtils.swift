@@ -59,27 +59,6 @@ class OfflineManagerUtils {
 
     static func setOfflineRegionDownloadState(result: @escaping FlutterResult, id: Int, isActive: Bool){
         guard let downloader = activeDownloaders[id] else {return }
-        // let offlineStorage = MGLOfflineStorage.shared
-        // guard let pacs = offlineStorage.packs else { return }
-
-        // let packToRemove = pacs.first(where: { pack -> Bool in
-        //     let contextJsonObject = try? JSONSerialization.jsonObject(with: pack.context)
-        //     let contextJsonDict = contextJsonObject as? [String: Any]
-        //     if let regionId = contextJsonDict?["id"] as? Int {
-        //         return regionId == id
-        //     } else {
-        //         return false
-        //     }
-        // })
-        // if let packToRemoveUnwrapped = packToRemove {
-        //     if(!isActive){
-        //         packToRemoveUnwrapped.suspend()
-        //         OfflineManagerUtils.releaseDownloader(id: id)
-        //     }else{
-        //         packToRemoveUnwrapped.resume()   
-        //     }
-        
-        // }
         downloader.setDownloadState(isActive: isActive);
         result(nil);
     }

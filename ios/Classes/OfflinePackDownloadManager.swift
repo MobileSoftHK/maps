@@ -42,10 +42,8 @@ class OfflinePackDownloader {
         if let pack = pack {
             if !isActive{
                 pack.suspend();
-                //isCompleted = true;
             }else{
                 pack.resume();
-               // isCompleted = false;
             }
         }
     }
