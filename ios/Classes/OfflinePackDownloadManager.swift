@@ -29,13 +29,25 @@ class OfflinePackDownloader {
         self.channelHandler = channelHandler
         self.regionDefinition = regionDefintion
         self.metadata = metadata
-
         setupNotifications()
     }
     
     deinit {
         print("Removing offline pack notification observers")
         NotificationCenter.default.removeObserver(self)
+    }
+
+
+    func setDownloadState(isActive: Bool){
+        if let pack = pack {
+            if !isActive{
+                pack.suspend();
+                //isCompleted = true;
+            }else{
+                pack.resume();
+               // isCompleted = false;
+            }
+        }
     }
     
     // MARK: Public methods
