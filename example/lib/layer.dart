@@ -28,6 +28,7 @@ class LayerState extends State {
   Widget build(BuildContext context) {
     return MapboxMap(
       accessToken: MapsDemo.ACCESS_TOKEN,
+      dragEnabled: false,
       onMapCreated: _onMapCreated,
       onMapClick: (point, latLong) =>
           print(point.toString() + latLong.toString()),
@@ -36,6 +37,7 @@ class LayerState extends State {
         target: center,
         zoom: 11.0,
       ),
+      annotationOrder: const [],
     );
   }
 
@@ -45,7 +47,7 @@ class LayerState extends State {
     controller.onFeatureTapped.add(onFeatureTap);
   }
 
-  void onFeatureTap(dynamic featureId) {
+  void onFeatureTap(dynamic featureId, Point<double> point, LatLng latLng) {
     final snackBar = SnackBar(
       content: Text(
         'Tapped feature with id $featureId',
@@ -58,9 +60,11 @@ class LayerState extends State {
   }
 
   void _onStyleLoadedCallback() async {
-    await controller.addGeoJsonSource("fills", _fills);
     await controller.addGeoJsonSource("points", _points);
     await controller.addGeoJsonSource("moving", _movingFeature(0));
+
+    //new style of adding sources
+    await controller.addSource("fills", GeojsonSourceProperties(data: _fills));
 
     await controller.addFillLayer(
       "fills",
@@ -113,22 +117,23 @@ class LayerState extends State {
     );
 
     await controller.addSymbolLayer(
-        "moving",
-        "moving",
-        SymbolLayerProperties(
-          textField: [Expressions.get, "name"],
-          textHaloWidth: 1,
-          textSize: 10,
-          textHaloColor: Colors.white.toHexStringRGB(),
-          textOffset: [
-            Expressions.literal,
-            [0, 2]
-          ],
-          iconImage: "bicycle-15",
-          iconSize: 2,
-          iconAllowOverlap: true,
-          textAllowOverlap: true,
-        ));
+      "moving",
+      "moving",
+      SymbolLayerProperties(
+        textField: [Expressions.get, "name"],
+        textHaloWidth: 1,
+        textSize: 10,
+        textHaloColor: Colors.white.toHexStringRGB(),
+        textOffset: [
+          Expressions.literal,
+          [0, 2]
+        ],
+        iconImage: "bicycle-15",
+        iconSize: 2,
+        iconAllowOverlap: true,
+        textAllowOverlap: true,
+      ),
+    );
     timer = Timer.periodic(
         Duration(milliseconds: 10),
         (t) => controller.setGeoJsonSource(
