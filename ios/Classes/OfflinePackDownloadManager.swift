@@ -126,25 +126,26 @@ class OfflinePackDownloader {
     }
     
     @objc private func onPackDownloadError(notification: NSNotification) {
-        guard let pack = notification.object as? MGLOfflinePack,
-            verifyPack(pack: pack) else { return }
-        let error = notification.userInfo?[MGLOfflinePackUserInfoKey.error] as? NSError
-        print("Pack download error: \(String(describing: error?.localizedDescription))")
-        // set download state to inactive
-        isCompleted = true
-        channelHandler.onError(
-            errorCode: "Downloading error",
-            errorMessage: error?.localizedDescription,
-            errorDetails: nil
-        )
-        result(FlutterError(
-            code: "Downloading error",
-            message: error?.localizedDescription,
-            details: nil
-        ))
-        if let region = OfflineRegion.fromOfflinePack(pack) {
-            OfflineManagerUtils.deleteRegion(result: result, id: region.id)
-        }
+        // DO NOTHING 
+        // guard let pack = notification.object as? MGLOfflinePack,
+        //     verifyPack(pack: pack) else { return }
+        // let error = notification.userInfo?[MGLOfflinePackUserInfoKey.error] as? NSError
+        // print("Pack download error: \(String(describing: error?.localizedDescription))")
+        // // set download state to inactive
+        // isCompleted = true
+        // channelHandler.onError(
+        //     errorCode: "Downloading error",
+        //     errorMessage: error?.localizedDescription,
+        //     errorDetails: nil
+        // )
+        // result(FlutterError(
+        //     code: "Downloading error",
+        //     message: error?.localizedDescription,
+        //     details: nil
+        // ))
+        // if let region = OfflineRegion.fromOfflinePack(pack) {
+        //     OfflineManagerUtils.deleteRegion(result: result, id: region.id)
+        // }
     }
     
     @objc private func onMaximumAllowedMapboxTiles(notification: NSNotification) {
