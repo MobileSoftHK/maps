@@ -135,6 +135,7 @@ final class MapboxMapController
   private MapView mapView;
   private MapboxMap mapboxMap;
   private final Map<String, SymbolController> symbols;
+  private final Map<String, SymbolController> symbolsMapAligned;
   private final Map<String, LineController> lines;
   private final Map<String, CircleController> circles;
   private final Map<String, FillController> fills;
@@ -178,6 +179,7 @@ final class MapboxMapController
     this.mapView = new MapView(context, options);
     this.featureLayerIdentifiers = new HashSet<>();
     this.symbols = new HashMap<>();
+    this.symbolsMapAligned = new HashMap<>();
     this.lines = new HashMap<>();
     this.circles = new HashMap<>();
     this.fills = new HashMap<>();
@@ -213,6 +215,30 @@ final class MapboxMapController
 
   private SymbolController symbol(String symbolId) {
     final SymbolController symbol = symbols.get(symbolId);
+    if (symbol == null) {
+      throw new IllegalArgumentException("Unknown symbol: " + symbolId);
+    }
+    return symbol;
+  }
+
+  private Map<String, SymbolController>  resolveSymbolsMap(@NonNull MethodCall methodCall){
+    final Boolean mapLock = methodCall.argument("map_aligned_layer");
+    if(Boolean.TRUE.equals(mapLock)){
+        return symbols;
+    }
+    return symbolsMapAligned;
+  }
+
+  private SymbolController resolveSymbolController(@NonNull String symbolId, @NonNull MethodCall methodCall){
+    final Boolean mapLock = methodCall.argument("map_aligned_layer");
+    if(Boolean.TRUE.equals(mapLock)){
+        return symbol(symbolId);
+    }
+    return symbolMapAligned(symbolId);
+  }
+
+  private SymbolController symbolMapAligned(String symbolId){
+    final SymbolController symbol = symbolsMapAligned.get(symbolId);
     if (symbol == null) {
       throw new IllegalArgumentException("Unknown symbol: " + symbolId);
     }
@@ -751,6 +777,7 @@ final class MapboxMapController
       case "symbols#addAll": {
         List<String> newSymbolIds = new ArrayList<String>();
         final List<Object> options = call.argument("options");
+        final Map<String, SymbolController> symbolMap = resolveSymbolsMap(call);
         List<SymbolOptions> symbolOptionsList = new ArrayList<SymbolOptions>();
         if (options != null) {
           SymbolBuilder symbolBuilder;
@@ -765,7 +792,7 @@ final class MapboxMapController
             for (Symbol symbol : newSymbols) {
               symbolId = String.valueOf(symbol.getId());
               newSymbolIds.add(symbolId);
-              symbols.put(symbolId, new SymbolController(symbol, annotationConsumeTapEvents.contains("AnnotationType.symbol"), this));
+              symbolMap.put(symbolId, new SymbolController(symbol, annotationConsumeTapEvents.contains("AnnotationType.symbol"), this));
             }
           }
         }
@@ -774,11 +801,12 @@ final class MapboxMapController
       }
       case "symbols#removeAll": {
         final ArrayList<String> symbolIds = call.argument("ids");
+        final Map<String, SymbolController> symbolMap = resolveSymbolsMap(call);
         SymbolController symbolController;
 
         List<Symbol> symbolList = new ArrayList<Symbol>();
         for(String symbolId : symbolIds){
-            symbolController = symbols.remove(symbolId);
+            symbolController = symbolMap.remove(symbolId);
             if (symbolController != null) {
               symbolList.add(symbolController.getSymbol());
             }
@@ -791,7 +819,7 @@ final class MapboxMapController
       }
       case "symbol#update": {
         final String symbolId = call.argument("symbol");
-        final SymbolController symbol = symbol(symbolId);
+        final SymbolController symbol = resolveSymbolController(symbolId, call);
         Convert.interpretSymbolOptions(call.argument("options"), symbol);
         symbol.update(resolveSymbolAnnotationManager(call));
         result.success(null);
@@ -804,7 +832,7 @@ final class MapboxMapController
         List<Symbol> symbolsToUpdate = new ArrayList<Symbol>();
         int i = 0;
         for (String symbolId : symbolIds) {
-          final SymbolController symbol = symbol(symbolId);
+          final SymbolController symbol = resolveSymbolController(symbolId, call);
           Convert.interpretSymbolOptions(options.get(i), symbol);
           symbolsToUpdate.add(symbol.getSymbol());
           i++;
@@ -815,7 +843,7 @@ final class MapboxMapController
       }
       case "symbol#getGeometry": {
         final String symbolId = call.argument("symbol");
-        final SymbolController symbol = symbol(symbolId);
+        final SymbolController symbol = resolveSymbolController(symbolId, call);
         final LatLng symbolLatLng = symbol.getGeometry();
         Map<String, Double> hashMapLatLng = new HashMap<>();
         hashMapLatLng.put("latitude", symbolLatLng.getLatitude());
@@ -1264,11 +1292,16 @@ final class MapboxMapController
     methodChannel.invokeMethod("map#onIdle", new HashMap<>());
   }
 
+
   @Override
   public boolean onAnnotationClick(Annotation annotation) {
     if (annotation instanceof Symbol) {
-      final SymbolController symbolController = symbols.get(String.valueOf(annotation.getId()));
+      SymbolController symbolController = symbols.get(String.valueOf(annotation.getId()));
       if (symbolController != null) {
+        return symbolController.onTap();
+      }
+      symbolController = symbolsMapAligned.get(String.valueOf(annotation.getId()));
+      if(symbolController!=null){
         return symbolController.onTap();
       }
     }
