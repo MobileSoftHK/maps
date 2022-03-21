@@ -1026,6 +1026,7 @@ final class MapboxMapController
           final CircleController circle = circle(circleId);
           Convert.interpretCircleOptions(options.get(i), circle);
           circlesToUpdate.add(circle.getCircle());
+          i++;
         }
         circleManager.update(circlesToUpdate);
         result.success(null);
