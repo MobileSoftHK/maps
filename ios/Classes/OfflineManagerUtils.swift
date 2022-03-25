@@ -100,6 +100,11 @@ class OfflineManagerUtils {
         }
     }
 
+    static func setOffline(result: @escaping FlutterResult, isConnected: Bool){
+        MGLNetworkConfiguration.sharedManager.connected = isConnected;
+        result(nil);
+    }
+
     /// Removes downloader from cache so it's memory can be deallocated
     static func releaseDownloader(id: Int) {
         activeDownloaders.removeValue(forKey: id)

@@ -46,6 +46,11 @@ public class SwiftMapboxGlFlutterPlugin: NSObject, FlutterPlugin {
                 guard let regionID = arguments["regionID"] as? Int else {return}
                 OfflineManagerUtils.setOfflineRegionDownloadState(result: result, id: regionID, isActive: isActive);
                 break;
+            case "setOffline":
+                guard let arguments = methodCall.arguments as? [String: Any] else {return}
+                guard let offline = arguments["offline"] as? Bool else {return}
+                OfflineManagerUtils.setOffline(result: result, isConnected: !offline);
+                break;
             case "setOfflineTileCountLimit":
                 guard let arguments = methodCall.arguments as? [String: Any],
                     let limit = arguments["limit"] as? UInt64 else {
