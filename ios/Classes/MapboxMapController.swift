@@ -42,6 +42,9 @@ class MapboxMapController: NSObject, FlutterPlatformView, MGLMapViewDelegate, Ma
         }
         mapView = MGLMapView(frame: frame)
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+
+        mapView.scaleBar.isHidden = false
+        mapView.scaleBarMargins = CGPoint(x: 70, y: 45)
         self.registrar = registrar
         
         super.init()

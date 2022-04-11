@@ -55,6 +55,8 @@ import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.MapboxMapOptions;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.mapboxsdk.maps.Style;
+import com.mapbox.pluginscalebar.ScaleBarOptions;
+import com.mapbox.pluginscalebar.ScaleBarPlugin;
 import com.mapbox.mapboxsdk.offline.OfflineManager;
 import com.mapbox.mapboxsdk.plugins.annotation.Annotation;
 import com.mapbox.mapboxsdk.plugins.annotation.Circle;
@@ -161,6 +163,7 @@ final class MapboxMapController
   private List<String> annotationOrder;
   private List<String> annotationConsumeTapEvents;
   private Set<String> featureLayerIdentifiers;
+  private ScaleBarOptions scaleBarOptions;
 
   MapboxMapController(
     int id,
@@ -352,6 +355,8 @@ final class MapboxMapController
   Style.OnStyleLoaded onStyleLoadedCallback = new Style.OnStyleLoaded() {
     @Override
     public void onStyleLoaded(@NonNull Style style) {
+      ScaleBarPlugin scaleBarPlugin = new ScaleBarPlugin(mapView, mapboxMap);
+      scaleBarPlugin.create(scaleBarOptions);
       MapboxMapController.this.style = style;
       final List<String> orderReversed = new ArrayList<String>(annotationOrder);
       Collections.reverse(orderReversed);
@@ -1443,6 +1448,9 @@ final class MapboxMapController
       return;
     }
     mapView.onCreate(null);
+    scaleBarOptions = new ScaleBarOptions(context);
+    scaleBarOptions.setMarginLeft(70f * density);
+    scaleBarOptions.setMarginTop(55f * density);
   }
 
   @Override
