@@ -43,9 +43,14 @@ class OfflineRegionDefinition {
   }
 
   static LatLngBounds _latLngBoundsFromList(List<dynamic> json) {
+    double south = (json[0][0] as num).toDouble();
+    double west = (json[0][1] as num).toDouble();
+    double north = (json[1][0] as num).toDouble();
+    double east = (json[1][1] as num).toDouble();
+
     return LatLngBounds(
-      southwest: LatLng(json[0][0], json[0][1]),
-      northeast: LatLng(json[1][0], json[1][1]),
+      southwest: LatLng(south, west),
+      northeast: LatLng(north, east),
     );
   }
 }
