@@ -1371,19 +1371,19 @@ final class MapboxMapController
       pointf.x + 10,
       pointf.y + 10
     );
+    
     List<Feature> featureList = mapboxMap.queryRenderedFeatures(rectF, featureLayerIdentifiers.toArray(new String[0]));
     if(!featureList.isEmpty()){
       final Map<String, Object> arguments = new HashMap<>(1);
       arguments.put("featureId", featureList.get(0).id());
       methodChannel.invokeMethod("feature#onTap", arguments);
-    } else { 
-      final Map<String, Object> arguments = new HashMap<>(5);
-      arguments.put("x", pointf.x);
-      arguments.put("y", pointf.y);
-      arguments.put("lng", point.getLongitude());
-      arguments.put("lat", point.getLatitude());
-      methodChannel.invokeMethod("map#onMapClick", arguments);
-    }
+    } 
+    final Map<String, Object> arguments = new HashMap<>(5);
+    arguments.put("x", pointf.x);
+    arguments.put("y", pointf.y);
+    arguments.put("lng", point.getLongitude());
+    arguments.put("lat", point.getLatitude());
+    methodChannel.invokeMethod("map#onMapClick", arguments);
     return true;
   }
 
