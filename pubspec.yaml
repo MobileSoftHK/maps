@@ -10,13 +10,13 @@ dependencies:
     git:
       url: https://github.com/MobileSoftHK/maps.git
       path: mapbox_gl_platform_interface
-      ref: dogtrace/release-0.14.0
+      ref: dogtrace/release-0.14.0-hybrid-composition
 
   mapbox_gl_web:
     git:
       url: https://github.com/MobileSoftHK/maps.git
       path: mapbox_gl_web
-      ref: dogtrace/release-0.14.0
+      ref: dogtrace/release-0.14.0-hybrid-composition
 
 dependency_overrides:
   mapbox_gl_platform_interface:
