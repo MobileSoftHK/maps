@@ -122,6 +122,8 @@ abstract class OfflineManagerUtils {
                 channelHandler.onStart();
                 //Observe downloading state
                 OfflineRegion.OfflineRegionObserver observer = new OfflineRegion.OfflineRegionObserver() {
+                    long lastProgressUpdate = System.currentTimeMillis();
+                    
                     @Override
                     public void onStatusChanged(OfflineRegionStatus status) {
                         //Calculate progress of downloading
@@ -137,8 +139,11 @@ abstract class OfflineManagerUtils {
                             activeRegions.remove(String.valueOf(_offlineRegion.getID()));
                             channelHandler.onSuccess();
                         } else {
-                            Log.i(TAG, "Region download progress = " + progress);
-                            channelHandler.onProgress(progress);
+                            if (System.currentTimeMillis() - lastProgressUpdate > 300 || progress >= 100) {
+                                Log.i(TAG, "Region download progress = " + progress);
+                                channelHandler.onProgress(progress);
+                                lastProgressUpdate = System.currentTimeMillis();
+                            }
                         }
                     }
 
