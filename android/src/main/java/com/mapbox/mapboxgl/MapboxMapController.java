@@ -322,13 +322,12 @@ final class MapboxMapController
     });
 
     mapView.addOnDidBecomeIdleListener(this);
-
     setStyleString(styleStringInitial);
-    // updateMyLocationEnabled();
   }
 
   @Override
   public void setStyleString(String styleString) {
+
     // Check if json, url, absolute path or asset path:
     if (styleString == null || styleString.isEmpty()) {
       Log.e(TAG, "setStyleString - string empty or null");
@@ -345,8 +344,10 @@ final class MapboxMapController
       String key = MapboxMapsPlugin.flutterAssets.getAssetFilePathByName(styleString);
       mapboxMap.setStyle(new Style.Builder().fromUri("asset://" + key), onStyleLoadedCallback);
     } else {
+      Log.e(TAG, "setStyleString - external style");
       mapboxMap.setStyle(new Style.Builder().fromUri(styleString), onStyleLoadedCallback);
     }
+
   }
 
   Style.OnStyleLoaded onStyleLoadedCallback = new Style.OnStyleLoaded() {
