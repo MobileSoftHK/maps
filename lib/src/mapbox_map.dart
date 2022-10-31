@@ -237,6 +237,7 @@ class _MapboxMapState extends State<MapboxMap> {
       'annotationConsumeTapEvents': annotationConsumeTapEvents,
       'onAttributionClickOverride': widget.onAttributionClick != null,
     };
+
     return _mapboxGlPlatform.buildView(
         creationParams, onPlatformViewCreated, widget.gestureRecognizers);
   }
@@ -251,8 +252,8 @@ class _MapboxMapState extends State<MapboxMap> {
   void dispose() async {
     super.dispose();
     if (_controller.isCompleted) {
-        final controller = await _controller.future;
-        controller.dispose();
+      final controller = await _controller.future;
+      controller.dispose();
     }
   }
 

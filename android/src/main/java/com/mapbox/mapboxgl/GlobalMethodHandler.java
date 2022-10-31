@@ -2,6 +2,10 @@ package com.mapbox.mapboxgl;
 
 import android.content.Context;
 import android.util.Log;
+import android.net.Network;
+import android.net.NetworkRequest;
+import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -26,6 +30,7 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.PluginRegistry;
 
+
 class GlobalMethodHandler implements MethodChannel.MethodCallHandler {
     private static final String TAG = GlobalMethodHandler.class.getSimpleName();
     private static final String DATABASE_NAME = "mbgl-offline.db";
@@ -40,10 +45,46 @@ class GlobalMethodHandler implements MethodChannel.MethodCallHandler {
     @NonNull
     private final BinaryMessenger messenger;
 
+
+    //Netwrok override
+    private  ConnectivityManager connectivityManager;
+    private NetworkRequest networkRequest = new NetworkRequest.Builder()
+        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+        .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+        .build();
+    private ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
+        @Override
+        public void onAvailable(@NonNull Network network) {
+            super.onAvailable(network);
+        }
+    
+        @Override
+        public void onLost(@NonNull Network network) {
+            super.onLost(network);
+            setConnectedState(true);
+        }
+    
+        @Override
+        public void onCapabilitiesChanged(@NonNull Network network, @NonNull NetworkCapabilities networkCapabilities) {
+            super.onCapabilitiesChanged(network, networkCapabilities);
+        }
+    };
+
+    void setConnectedState(boolean isConnected){
+        if(context != null){
+            ConnectivityReceiver cr = ConnectivityReceiver.instance(context);
+            if(cr != null){
+                cr.setConnected(isConnected);
+            }
+        }
+    }
+
     GlobalMethodHandler(@NonNull PluginRegistry.Registrar registrar) {
         this.registrar = registrar;
         this.context = registrar.activeContext();
         this.messenger = registrar.messenger();
+        this.initNetworkStateOverride();
 
     }
 
@@ -51,7 +92,18 @@ class GlobalMethodHandler implements MethodChannel.MethodCallHandler {
         this.context = binding.getApplicationContext();
         this.flutterAssets = binding.getFlutterAssets();
         this.messenger = binding.getBinaryMessenger();
+        this.initNetworkStateOverride();
     }
+
+
+    private void initNetworkStateOverride(){
+        if(this.connectivityManager == null){
+            this.connectivityManager = (ConnectivityManager) this.context.getSystemService(ConnectivityManager.class);
+            this.connectivityManager.registerNetworkCallback(this.networkRequest, networkCallback);
+            setConnectedState(true);
+        }
+    }
+
 
     @Override
     public void onMethodCall(MethodCall methodCall, MethodChannel.Result result) {
