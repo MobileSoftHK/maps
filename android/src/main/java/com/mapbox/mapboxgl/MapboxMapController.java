@@ -1422,6 +1422,9 @@ final class MapboxMapController
       return;
     }
 
+    mapView.onStop();
+    mapView.onDestroy();
+
     if (locationComponent != null) {
       locationComponent.setLocationComponentEnabled(false);
     }
@@ -1442,7 +1445,6 @@ final class MapboxMapController
     }
     stopListeningForLocationUpdates();
 
-    mapView.onDestroy();
     mapView = null;
   }
 
